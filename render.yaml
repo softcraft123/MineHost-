@@ -1,0 +1,12 @@
+# Render blueprint — free tier, no credit card needed for a web service.
+# Push this repo to GitHub, then "New > Blueprint" on render.com and pick it.
+services:
+  - type: web
+    name: emberforge-site
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: 8080

@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EmberForge — Modern Minecraft server software</title>
+<meta name="description" content="EmberForge is a clean-room Minecraft Java 1.20.4 server in Rust. One binary, ~0.5 MB per player, encrypted, instant start.">
+<meta property="og:title" content="EmberForge — Modern Minecraft server software">
+<meta property="og:description" content="A clean-room Minecraft Java server in Rust. One binary. No JVM.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* pure black canvas, layered */
+  --black:#000;
+  --bg-1:#0a0a0c;
+  --bg-2:#101014;
+  --bg-3:#16161c;
+  --bg-4:#1d1d25;
+  --line:#232330;
+  --line-2:#2e2e3d;
+  --text:#ffffff;
+  --muted:#a0a0b0;
+  --dim:#6c6c80;
+
+  /* CubeCraft-derived accent family */
+  --amber:#ffb33a;
+  --amber-2:#ffc76b;
+  --purple:#bb4dff;
+  --red:#e03030;
+  --green:#4ade80;
+  --blue:#5b9dff;
+
+  --disp:'Fredoka',system-ui,sans-serif;
+  --sans:'Inter',system-ui,-apple-system,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --max:1200px;
+  --r:16px;
+  --glow-amber:rgba(255,179,58,.35);
+  --glow-purple:rgba(187,77,255,.30);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--black);color:var(--text);
+  font-family:var(--sans);font-size:16px;line-height:1.65;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+/* ---------- deep layered black background ---------- */
+.bgfx{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:var(--black)}
+.bgfx .mesh{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 80% 55% at 18% 8%, var(--glow-purple), transparent 60%),
+    radial-gradient(ellipse 70% 50% at 85% 12%, var(--glow-amber), transparent 62%),
+    radial-gradient(ellipse 90% 60% at 50% 100%, rgba(224,48,48,.16), transparent 65%);
+  filter:blur(30px);opacity:.85;
+}
+.bgfx .grid{
+  position:absolute;inset:-1px;
+  background-image:
+    linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+  background-size:56px 56px;
+  mask-image:radial-gradient(ellipse 110% 60% at 50% 0%,#000 30%,transparent 75%);
+}
+.bgfx .vignette{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse 120% 90% at 50% 50%,transparent 40%,rgba(0,0,0,.85) 100%);
+}
+.bgfx .noise{
+  position:absolute;inset:0;opacity:.14;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.shell{position:relative;z-index:1}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 28px}
+
+/* ---------- nav ---------- */
+header{position:sticky;top:0;z-index:80;background:rgba(0,0,0,.66);backdrop-filter:blur(20px) saturate(150%);border-bottom:1px solid var(--line)}
+nav{display:flex;align-items:center;justify-content:space-between;gap:22px;padding:14px 0}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{font-family:var(--disp);font-weight:700;font-size:1.42rem;letter-spacing:-.01em;line-height:1}
+.logo em{font-style:normal;background:linear-gradient(100deg,var(--amber),var(--amber-2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.mark{
+  width:36px;height:36px;border-radius:11px;flex:none;display:grid;place-items:center;font-size:1rem;
+  background:linear-gradient(140deg,var(--amber),#d98600);
+  box-shadow:0 6px 22px var(--glow-amber),inset 0 1px 0 rgba(255,255,255,.35);
+}
+nav .links{display:flex;align-items:center;gap:2px}
+nav a{color:var(--muted);text-decoration:none;font-size:.9rem;font-weight:500;padding:9px 14px;border-radius:10px;transition:color .16s,background .16s}
+nav a:hover{color:var(--text);background:var(--bg-3)}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;font-family:var(--sans);font-weight:600;font-size:.9rem;
+  padding:13px 24px;border-radius:12px;text-decoration:none;border:1px solid transparent;cursor:pointer;
+  transition:transform .15s,box-shadow .15s,background .15s,border-color .15s;
+}
+.btn.amber{background:linear-gradient(140deg,var(--amber),#e09a00);color:#1a1000;box-shadow:0 6px 24px var(--glow-amber)}
+.btn.amber:hover{transform:translateY(-2px);box-shadow:0 12px 34px var(--glow-amber)}
+.btn.purple{background:linear-gradient(140deg,var(--purple),#8a2be2);color:#fff;box-shadow:0 6px 24px var(--glow-purple)}
+.btn.purple:hover{transform:translateY(-2px);box-shadow:0 12px 34px var(--glow-purple)}
+.btn.dark{background:rgba(29,29,37,.8);color:var(--text);border-color:var(--line-2);backdrop-filter:blur(10px)}
+.btn.dark:hover{border-color:var(--dim);transform:translateY(-2px)}
+@media(max-width:880px){nav .links a:not(.btn){display:none}}
+
+/* ---------- hero ---------- */
+.hero{padding:96px 0 74px;text-align:center}
+.tagpill{
+  display:inline-flex;align-items:center;gap:10px;font-size:.78rem;font-weight:500;color:var(--muted);
+  border:1px solid var(--line-2);background:rgba(16,16,20,.7);padding:8px 16px;border-radius:999px;
+  margin-bottom:28px;backdrop-filter:blur(10px);
+}
+.dot-live{width:8px;height:8px;border-radius:50%;background:var(--green);animation:live 2s infinite}
+@keyframes live{0%{box-shadow:0 0 0 0 rgba(74,222,128,.6)}70%{box-shadow:0 0 0 10px rgba(74,222,128,0)}100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}}
+h1{
+  font-family:var(--disp);font-weight:700;line-height:1.02;letter-spacing:-.025em;
+  font-size:clamp(2.9rem,7vw,5.4rem);margin:0 auto 20px;max-width:17ch;
+}
+h1 .hl{
+  background:linear-gradient(100deg,var(--amber) 10%,var(--amber-2) 45%,var(--purple) 95%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.lede{max-width:60ch;margin:0 auto;color:var(--muted);font-size:1.09rem;font-weight:400}
+.lede b{color:var(--text);font-weight:600}
+.actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:38px}
+.trust{margin-top:26px;font-size:.8rem;color:var(--dim);font-family:var(--mono)}
+
+/* ---------- floating server card ---------- */
+.panel{
+  max-width:880px;margin:64px auto 0;border:1px solid var(--line-2);border-radius:20px;overflow:hidden;
+  background:linear-gradient(170deg,rgba(22,22,28,.92),rgba(10,10,12,.94));
+  backdrop-filter:blur(16px);
+  box-shadow:0 40px 90px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.03),inset 0 1px 0 rgba(255,255,255,.06);
+}
+.panel .top{display:flex;align-items:center;gap:8px;padding:13px 18px;border-bottom:1px solid var(--line);background:rgba(0,0,0,.5)}
+.panel .d{width:11px;height:11px;border-radius:50%}
+.panel .d:nth-child(1){background:#ff5f57}.panel .d:nth-child(2){background:#febc2e}.panel .d:nth-child(3){background:#28c840}
+.panel .t{margin-left:10px;font-family:var(--mono);font-size:.74rem;color:var(--dim)}
+.panel .grid2{display:grid;grid-template-columns:repeat(3,1fr)}
+@media(max-width:640px){.panel .grid2{grid-template-columns:1fr}}
+.panel .c{padding:20px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.panel .c:nth-child(3n){border-right:none}
+.panel .k{font-family:var(--mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.panel .v{font-family:var(--disp);font-size:1.55rem;font-weight:600;margin-top:6px}
+.panel .v.g{color:var(--green)}.panel .v.a{color:var(--amber)}.panel .v.p{color:var(--purple)}
+.panel .bot{padding:15px 18px;display:flex;justify-content:space-between;align-items:center;gap:12px;background:rgba(0,0,0,.4);flex-wrap:wrap}
+.panel .bot span{font-family:var(--mono);font-size:.74rem;color:var(--dim)}
+.lnk{color:var(--amber);text-decoration:none;font-weight:600;font-size:.82rem}
+.lnk:hover{text-decoration:underline}
+
+/* ---------- stat strip ---------- */
+.strip{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:rgba(10,10,12,.5);backdrop-filter:blur(10px)}
+.strip .g{display:grid;grid-template-columns:repeat(4,1fr)}
+@media(max-width:840px){.strip .g{grid-template-columns:repeat(2,1fr)}}
+.strip .s{padding:32px 26px;border-right:1px solid var(--line);text-align:center}
+.strip .s:last-child{border-right:none}
+@media(max-width:840px){.strip .s:nth-child(2){border-right:none}.strip .s:nth-child(-n+2){border-bottom:1px solid var(--line)}}
+.strip .n{font-family:var(--disp);font-size:2.3rem;font-weight:700;line-height:1}
+.strip .n .u{font-size:1.05rem;color:var(--dim);font-weight:500;margin-left:2px}
+.strip .l{font-size:.8rem;color:var(--dim);margin-top:6px}
+
+/* ---------- sections ---------- */
+section{padding:96px 0;position:relative}
+section + section{border-top:1px solid var(--line)}
+.kick{font-family:var(--mono);font-size:.72rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--amber);margin-bottom:14px}
+h2{font-family:var(--disp);font-weight:700;font-size:clamp(1.9rem,4vw,3rem);line-height:1.1;letter-spacing:-.02em;margin:0 0 14px;max-width:20ch}
+.sub{color:var(--muted);font-size:1.02rem;max-width:62ch}
+.head{margin-bottom:48px}
+.head.mid{text-align:center}
+.head.mid h2,.head.mid .sub{margin-inline:auto}
+.head.split{display:flex;justify-content:space-between;align-items:flex-end;gap:26px;flex-wrap:wrap}
+
+/* ---------- builds ---------- */
+.builds{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:22px}
+.build{
+  border:1px solid var(--line-2);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;
+  background:linear-gradient(170deg,rgba(22,22,28,.85),rgba(10,10,12,.88));
+  backdrop-filter:blur(12px);
+  transition:transform .2s,border-color .2s,box-shadow .2s;
+}
+.build:hover{transform:translateY(-5px);border-color:#3a3a4d;box-shadow:0 28px 60px rgba(0,0,0,.7),0 0 30px rgba(255,179,58,.08)}
+.build .hd{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:15px 18px;border-bottom:1px solid var(--line)}
+.chip{font-family:var(--mono);font-size:.64rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:5px 10px;border-radius:7px;border:1px solid var(--line-2);color:var(--muted)}
+.chip.official{color:var(--amber);border-color:rgba(255,179,58,.4);background:rgba(255,179,58,.1)}
+.chip.uploaded{color:var(--green);border-color:rgba(74,222,128,.4);background:rgba(74,222,128,.1)}
+.build .bd{padding:18px;flex:1;display:flex;flex-direction:column;gap:12px}
+.build .nm{font-family:var(--disp);font-weight:600;font-size:1.1rem;word-break:break-all;line-height:1.3}
+.kv{display:flex;justify-content:space-between;font-size:.82rem;color:var(--muted)}
+.kv .k{color:var(--dim)}
+.hash{font-family:var(--mono);font-size:.66rem;color:var(--dim);word-break:break-all;border-top:1px solid var(--line);padding-top:11px}
+.build .ac{padding:0 18px 18px}
+.build .ac .btn{width:100%}
+.empty{border:1px dashed var(--line-2);border-radius:var(--r);padding:56px;text-align:center;color:var(--dim)}
+
+/* ---------- compare ---------- */
+.tbl{border:1px solid var(--line-2);border-radius:var(--r);overflow-x:auto;background:rgba(10,10,12,.7);backdrop-filter:blur(12px);box-shadow:0 24px 60px rgba(0,0,0,.6)}
+table{border-collapse:collapse;width:100%;min-width:860px}
+th,td{padding:14px 16px;text-align:left;border-bottom:1px solid var(--line);font-size:.87rem}
+thead th{background:rgba(0,0,0,.75);font-family:var(--mono);font-size:.68rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);position:sticky;top:0}
+thead th.us{color:var(--amber);background:rgba(255,179,58,.1)}
+tbody td:first-child{font-weight:600;color:var(--text)}
+tbody tr:hover{background:rgba(255,255,255,.025)}
+td.us{background:rgba(255,179,58,.05)}
+td.val{color:var(--muted);font-family:var(--mono);font-size:.79rem}
+.yes{color:var(--green);font-weight:700}
+.no{color:#3f3f4d}
+
+/* ---------- cards ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:22px}
+.card{
+  border:1px solid var(--line-2);border-radius:var(--r);padding:26px;
+  background:linear-gradient(170deg,rgba(22,22,28,.8),rgba(10,10,12,.85));
+  backdrop-filter:blur(12px);transition:transform .2s,border-color .2s;
+}
+.card:hover{transform:translateY(-4px);border-color:#3a3a4d}
+.card h3{font-family:var(--disp);margin:0 0 6px;font-size:1.18rem;font-weight:600}
+.card .tg{font-family:var(--mono);font-size:.64rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--purple);display:block;margin-bottom:16px}
+.card p{margin:0 0 11px;font-size:.88rem;color:var(--muted)}
+.card p b{display:block;font-family:var(--mono);font-size:.66rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:2px}
+.card ul{margin:0;padding-left:19px;font-size:.88rem;color:var(--muted)}
+.card li{margin-bottom:9px}
+.card li::marker{color:var(--amber)}
+
+/* ---------- upload ---------- */
+.zone{
+  border:1px dashed #35354a;border-radius:20px;padding:60px 28px;text-align:center;
+  background:linear-gradient(170deg,rgba(22,22,28,.6),rgba(10,10,12,.65));
+  backdrop-filter:blur(12px);transition:border-color .2s,background .2s,transform .2s;
+}
+.zone.drag{border-color:var(--amber);background:rgba(255,179,58,.07);transform:scale(1.005)}
+.zone h3{font-family:var(--disp);margin:0 0 8px;font-size:1.4rem;font-weight:600}
+.zone p{margin:0 auto 26px;max-width:56ch;color:var(--muted);font-size:.92rem}
+input[type=file]{display:none}
+.pbar{height:7px;border-radius:999px;background:var(--bg-3);margin:24px auto 0;max-width:500px;overflow:hidden;display:none}
+.pbar.on{display:block}
+.pbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--amber),var(--purple));transition:width .2s}
+.msg{margin-top:18px;font-size:.88rem;min-height:1.3em;font-weight:500}
+.msg.ok{color:var(--green)}.msg.err{color:#ff7b7b}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid var(--line);padding:56px 0 42px;background:rgba(0,0,0,.7);backdrop-filter:blur(12px)}
+footer .cols{display:grid;grid-template-columns:1.5fr repeat(3,1fr);gap:36px;margin-bottom:40px}
+@media(max-width:860px){footer .cols{grid-template-columns:1fr 1fr}}
+footer h4{font-family:var(--mono);margin:0 0 14px;font-size:.68rem;font-weight:500;letter-spacing:.15em;text-transform:uppercase;color:var(--dim)}
+footer ul{list-style:none;margin:0;padding:0}
+footer li{margin-bottom:9px}
+footer a{color:var(--muted);text-decoration:none;font-size:.88rem}
+footer a:hover{color:var(--amber)}
+footer .legal{border-top:1px solid var(--line);padding-top:26px;color:var(--dim);font-size:.78rem;line-height:1.7}
+footer .legal p{margin:0 0 8px}
+
+.rv{opacity:0;transform:translateY(24px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
+.rv.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}}
+</style>
+</head>
+<body>
+
+<div class="bgfx">
+  <div class="mesh"></div>
+  <div class="grid"></div>
+  <div class="vignette"></div>
+  <div class="noise"></div>
+</div>
+
+<div class="shell">
+
+<header>
+  <div class="wrap">
+    <nav>
+      <div class="brand">
+        <span class="mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="#1a1000" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5z"/>
+          </svg>
+        </span>
+        <span class="logo">Ember<em>Forge</em></span>
+      </div>
+      <div class="links">
+        <a href="#download">Download</a>
+        <a href="#compare">Compare</a>
+        <a href="#upload">Upload</a>
+        <a href="#specs">Specs</a>
+        <a href="#download" class="btn amber">Get started</a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<!-- ================= HERO ================= -->
+<div class="hero">
+  <div class="wrap">
+    <div class="tagpill"><span class="dot-live"></span> Live now · Minecraft Java 1.20.4 · protocol 765</div>
+    <h1>Run a Minecraft server<br>that <span class="hl">actually flies</span>.</h1>
+    <p class="lede">
+      EmberForge is a <b>clean-room Minecraft Java server written in Rust</b>.
+      Real protocol, real encryption, real mobs — shipped as <b>one small binary</b>.
+      No JVM. No four gigabytes of RAM. No waiting for it to boot.
+    </p>
+    <div class="actions">
+      <a class="btn amber" href="#download">↓ Download the build</a>
+      <a class="btn dark" href="#compare">Compare with others</a>
+    </div>
+    <div class="trust">free · open · no account required</div>
+
+    <div class="panel">
+      <div class="top">
+        <span class="d"></span><span class="d"></span><span class="d"></span>
+        <span class="t">emberforge-server — live status</span>
+      </div>
+      <div class="grid2">
+        <div class="c"><div class="k">Status</div><div class="v g" id="p-status">checking…</div></div>
+        <div class="c"><div class="k">Builds hosted</div><div class="v a" id="p-builds">—</div></div>
+        <div class="c"><div class="k">Community uploads</div><div class="v p" id="p-ups">—</div></div>
+        <div class="c"><div class="k">Uptime</div><div class="v" id="p-up">—</div></div>
+        <div class="c"><div class="k">Protocol</div><div class="v">765</div></div>
+        <div class="c"><div class="k">Memory / player</div><div class="v">0.5 MB</div></div>
+      </div>
+      <div class="bot">
+        <span>20 TPS · encrypted · world persistence</span>
+        <a class="lnk" href="/api/health">/api/health →</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="strip">
+  <div class="wrap">
+    <div class="g">
+      <div class="s"><div class="n">0.5<span class="u">MB</span></div><div class="l">memory per player</div></div>
+      <div class="s"><div class="n">20<span class="u">TPS</span></div><div class="l">fixed tick rate</div></div>
+      <div class="s"><div class="n">3.6<span class="u">MB</span></div><div class="l">total binary</div></div>
+      <div class="s"><div class="n">170<span class="u">tests</span></div><div class="l">passing · 0 warnings</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= DOWNLOAD ================= -->
+<section id="download" class="rv">
+  <div class="wrap">
+    <div class="head split">
+      <div>
+        <div class="kick">// downloads</div>
+        <h2>Grab the build</h2>
+        <p class="sub">Run it and connect with Minecraft Java 1.20.4. The first start writes <code>server.properties</code>, <code>eula.txt</code> and the world for you.</p>
+      </div>
+      <div class="sub" id="dl-count" style="font-family:var(--mono);font-size:.82rem;text-align:right">loading…</div>
+    </div>
+    <div class="builds" id="builds"><div class="empty">Loading builds…</div></div>
+  </div>
+</section>
+
+<!-- ================= COMPARE ================= -->
+<section id="compare" class="rv">
+  <div class="wrap">
+    <div class="head">
+      <div class="kick">// comparison</div>
+      <h2>How it stacks up</h2>
+      <p class="sub">Against the servers people already run. Straight answers — including where EmberForge loses.</p>
+    </div>
+    <div class="tbl">
+      <table id="cmp">
+        <thead><tr><th>Feature</th></tr></thead>
+        <tbody><tr><td>Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="cards" id="verdicts" style="margin-top:36px"></div>
+  </div>
+</section>
+
+<!-- ================= UPLOAD ================= -->
+<section id="upload" class="rv">
+  <div class="wrap">
+    <div class="head mid">
+      <div class="kick">// contribute</div>
+      <h2>Upload a build</h2>
+      <p class="sub">Drop a file — it is hashed, listed, and given a working download link instantly.</p>
+    </div>
+    <div class="zone" id="drop">
+      <h3>Drop your build here</h3>
+      <p>Accepted: .exe .zip .tar .gz .tgz .bin .jar .msi — up to 64 MB.</p>
+      <label class="btn purple" for="file">Choose a file</label>
+      <input type="file" id="file" accept=".exe,.zip,.tar,.gz,.tgz,.bin,.jar,.msi">
+      <div class="pbar" id="prog"><i></i></div>
+      <div class="msg" id="msg"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SPECS ================= -->
+<section id="specs" class="rv">
+  <div class="wrap">
+    <div class="head mid">
+      <div class="kick">// technical</div>
+      <h2>What is inside</h2>
+      <p class="sub">Stated plainly: what works, what is proven, and what is not done yet.</p>
+    </div>
+    <div class="cards">
+      <div class="card">
+        <h3>Implemented</h3><span class="tg">works today</span>
+        <ul>
+          <li>Handshake, status, login, configuration, play</li>
+          <li>AES-128/CFB8 encryption (NIST vector), RSA exchange, Mojang session hash</li>
+          <li>Chunk generation, streaming, on-disk world persistence</li>
+          <li>Block break times, item drops, 36-slot inventory</li>
+          <li>Mobs with chase AI, health and combat</li>
+          <li>Chat, commands, whitelist, HTTP status dashboard</li>
+          <li>Fixed 20 TPS tick loop with metrics</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Verified</h3><span class="tg">evidence</span>
+        <ul>
+          <li>170 automated tests passing</li>
+          <li>Zero compiler warnings, formatted</li>
+          <li>AddressSanitizer: no memory errors</li>
+          <li>ThreadSanitizer: no data races</li>
+          <li>2000 synthetic clients joined at 100%</li>
+          <li>~0.47 MB per player at 1000 concurrent</li>
+          <li>Windows .exe executed and served players</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Not done</h3><span class="tg">honest</span>
+        <ul>
+          <li>Not tested against a real vanilla client</li>
+          <li>Mojang live session server never contacted</li>
+          <li>No plugin or mod API</li>
+          <li>No IOCP backend (portable threads only)</li>
+          <li>Mobs have no pathfinding</li>
+          <li>Tools do not change break speed</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <div class="brand" style="margin-bottom:14px">
+          <span class="mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="#1a1000" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5z"/>
+            </svg>
+          </span>
+          <span class="logo">Ember<em>Forge</em></span>
+        </div>
+        <p class="sub" style="font-size:.88rem;max-width:34ch">A clean-room Minecraft Java server written in Rust. One binary. No JVM.</p>
+      </div>
+      <div><h4>Software</h4><ul>
+        <li><a href="#download">Download</a></li>
+        <li><a href="#specs">Specifications</a></li>
+        <li><a href="/api/builds">Build API</a></li>
+      </ul></div>
+      <div><h4>Resources</h4><ul>
+        <li><a href="#compare">Comparison</a></li>
+        <li><a href="#upload">Upload</a></li>
+        <li><a href="/api/health">Health</a></li>
+      </ul></div>
+      <div><h4>Project</h4><ul>
+        <li><a href="#specs">Status</a></li>
+        <li><a href="#specs">Limitations</a></li>
+      </ul></div>
+    </div>
+    <div class="legal">
+      <p>EmberForge is a clean-room implementation. It ships no Mojang code or assets.</p>
+      <p>This website is not an official Minecraft website and is not associated with Mojang Studios or Microsoft. All product and company names are trademarks of their respective holders. Use of these names does not imply any affiliation or endorsement.</p>
+    </div>
+  </div>
+</footer>
+
+</div><!-- /shell -->
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const upTime = s => s<60 ? s+'s' : s<3600 ? Math.floor(s/60)+'m' : Math.floor(s/3600)+'h '+Math.floor(s%3600/60)+'m';
+const cell = v => v===true ? '<span class="yes">✓</span>' : v===false ? '<span class="no">—</span>' : esc(v);
+
+async function loadBuilds(){
+  try{
+    const d = await (await fetch('/api/builds')).json();
+    $('#dl-count').textContent = d.count + ' build' + (d.count===1?'':'s') + ' available';
+    $('#p-builds').textContent = d.count;
+    const el = $('#builds');
+    if(!d.builds.length){ el.innerHTML = '<div class="empty">No builds yet — upload one below.</div>'; return; }
+    el.innerHTML = d.builds.map(b => `
+      <div class="build">
+        <div class="hd">
+          <span class="chip ${b.kind}">${esc(b.kind)}</span>
+          <span class="chip">${esc(b.ext||'file')}</span>
+        </div>
+        <div class="bd">
+          <div class="nm">${esc(b.name)}</div>
+          <div class="kv"><span class="k">Size</span><span>${b.size_human}</span></div>
+          <div class="kv"><span class="k">Published</span><span>${new Date(b.modified*1000).toLocaleDateString()}</span></div>
+          <div class="hash">sha256 ${b.sha256.slice(0,48)}…</div>
+        </div>
+        <div class="ac"><a class="btn amber" href="${b.url}" download>↓ Download</a></div>
+      </div>`).join('');
+  }catch(e){ $('#builds').innerHTML = '<div class="empty">Could not load builds.</div>'; }
+}
+
+async function loadCompare(){
+  try{
+    const d = await (await fetch('/api/compare')).json();
+    $('#cmp thead tr').innerHTML = '<th>Feature</th>' + d.columns.map((c,i)=>
+      `<th class="${i===0?'us':''}">${esc(c)}</th>`).join('');
+    $('#cmp tbody').innerHTML = d.features.map(f => `
+      <tr><td>${esc(f.feature)}</td>
+      ${f.values.map((v,i)=>`<td class="val ${i===0?'us':''}">${cell(v)}</td>`).join('')}</tr>`).join('');
+    $('#verdicts').innerHTML = d.verdicts.map(v => `
+      <div class="card">
+        <h3>${esc(v.name)}</h3><span class="tg">${esc(v.tag)}</span>
+        <p><b>Strengths</b>${esc(v.good)}</p>
+        <p><b>Weaknesses</b>${esc(v.bad)}</p>
+        <p><b>Choose it for</b>${esc(v.pick)}</p>
+      </div>`).join('');
+  }catch(e){ $('#cmp tbody').innerHTML = '<tr><td>Could not load comparison.</td></tr>'; }
+}
+
+async function loadHealth(){
+  try{
+    const d = await (await fetch('/api/health')).json();
+    $('#p-status').textContent = 'online';
+    $('#p-builds').textContent = d.builds;
+    $('#p-ups').textContent = d.uploads;
+    $('#p-up').textContent = upTime(d.uptime_secs);
+  }catch(e){ $('#p-status').textContent = 'offline'; }
+}
+
+const drop=$('#drop'), file=$('#file'), prog=$('#prog'), msg=$('#msg');
+const say=(m,c)=>{ msg.textContent=m; msg.className='msg '+(c||''); };
+async function upload(f){
+  if(!f) return;
+  if(f.size > 64*1024*1024){ say('That file is over 64 MB.','err'); return; }
+  const fd=new FormData(); fd.append('file',f,f.name);
+  say('Uploading '+f.name+'…'); prog.classList.add('on'); prog.firstElementChild.style.width='0%';
+  const x=new XMLHttpRequest(); x.open('POST','/api/upload');
+  x.upload.onprogress=e=>{ if(e.lengthComputable) prog.firstElementChild.style.width=(e.loaded/e.total*100)+'%'; };
+  x.onload=()=>{
+    prog.classList.remove('on');
+    try{ const d=JSON.parse(x.responseText);
+      if(x.status===201){ say('Uploaded — '+d.size_human+' · sha256 '+d.sha256.slice(0,20)+'…','ok'); loadBuilds(); loadHealth(); }
+      else say('Upload failed: '+(d.error||x.status),'err');
+    }catch(e){ say('Upload failed: '+x.status,'err'); }
+  };
+  x.onerror=()=>{ prog.classList.remove('on'); say('Network error during upload.','err'); };
+  x.send(fd);
+}
+file.addEventListener('change',e=>upload(e.target.files[0]));
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag');}));
+drop.addEventListener('drop',e=>{const f=e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) upload(f);});
+
+const io=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);} }),{threshold:.1});
+document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+
+loadBuilds(); loadCompare(); loadHealth();
+setInterval(loadHealth, 15000);
+</script>
+</body>
+</html>
